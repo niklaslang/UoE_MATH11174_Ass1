@@ -10,6 +10,8 @@ cohort <- read.csv("assignment1_data/cohort.csv", stringsAsFactors = TRUE)
 lab <- read.csv("assignment1_data/lab1.csv")
 linker <- read.csv("assignment1_data/linker.csv", stringsAsFactors = TRUE)
 
+## (a) ##
+
 # convert to data tables
 
 cohort.dt <- data.table(cohort)
@@ -39,16 +41,30 @@ table(cohort.dt$albumin)
 # perform assertion checks to ensure that all identifiers in cohort.csv have been accounted for 
 # perform assertion checks to ensure that any validation fields are consistent between sets
 
-stopifnot(
-  
-  # ensure that all identifiers in cohort.csv have been accounted for
-  all(cohort.dt$id %in% cohort$id),
-  
-  # ensure that any validation fields are consistent between sets
-  all(for(orig.id in as.vector(cohort.dt$id)){isTRUE(linker.dt[id == orig.id][,2] == cohort.dt[id == orig.id][,2])})
+# ensure that all identifiers in cohort.csv have been accounted for
+stopifnot(all(cohort.dt$id %in% cohort$id))
 
-)
+# ensure that any validation fields are consistent between sets
+setorder(cohort.dt, id)
+setorder(linker.dt, id)
+
+stopifnot(all(cohort.dt[,id, LABID] == linker.dt[,id, LABID]))
+  
+# stopifnot(all(for(orig.id in as.vector(cohort.dt$id)){isTRUE(linker.dt[id == orig.id][,2] == cohort.dt[id == orig.id][,2])}))
 
 # after the assertions are complete, drop the identifier that originated from lab dataset LABID
 
 cohort.dt$LABID <- NULL
+
+## (b) ##
+
+# evaluate if any missing age fields can be calculated
+# ased on the age/year offset being consistent for the remainder of the cohort, update any missing age fields
+
+# calculate the age offset
+
+
+
+# final code line
+
+cohort.dt[, age := ifelse(is.na(age), age.offset-yob, age)]
