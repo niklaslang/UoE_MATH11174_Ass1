@@ -105,8 +105,10 @@ summary.con.variables <- data.table("Variable" = colnames(cohort.dt[, .SD, .SDco
                                     "Total N" = sapply(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)], length),
                                     "Missing N (%)" = sapply(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)], function(z)sum(is.na(z))/length(z)*100))
 
-cat.missing.N <- format(round(sapply(cohort.dt[, c("diabetes","albumin")], function(z)sum(is.na(z))/length(z)*100),2), nsmall = 2)
-cat.total.N <- sapply(cohort.dt[, c("diabetes","albumin")], length)
+# Splitting categorical fields in the summary table into a row per category. 
+# Creating a function that takes a vector of categorical values as an input 
+# and returns the total number of non-missing rows of the respective factor 
+# and the overall percentage of the respective factor:
 
 return.summary.cat <- function(vector, use.str){
   
@@ -119,11 +121,21 @@ return.summary.cat <- function(vector, use.str){
   return(output)
 }
 
+# Using this function to compute the total number of non-missing rows of the `albumin` and `diabetes` categories 
+# and the overall percentage of the `albumin` and `diabetes` categories:
+
 per.cat.N <- c( return.summary.cat(cohort.dt$diabetes, 0),
                 return.summary.cat(cohort.dt$diabetes, 1),
                 return.summary.cat(cohort.dt$albumin, "normo"),
                 return.summary.cat(cohort.dt$albumin, "micro"),
                 return.summary.cat(cohort.dt$albumin, "macro"))
+
+# Computing the remaining values for the summary table of the categorial variables by hand
+
+cat.missing.N <- format(round(sapply(cohort.dt[, c("diabetes","albumin")], function(z)sum(is.na(z))/length(z)*100),2), nsmall = 2)
+cat.total.N <- sapply(cohort.dt[, c("diabetes","albumin")], length)
+
+# Creating the summary table for all non-continuous variables:
 
 summary.cat.variables <- data.table("Variable" = c("diabetes (0)","diabetes(1)","albumin (normo)","albumin (micro)","albumin (macro)"),
                                     "Median (IQR) or N (%)" = per.cat.N,
