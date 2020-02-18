@@ -1,0 +1,169 @@
+# Assignment 1
+## Biomedical Data Science
+## B159640
+
+### Problem 1
+
+Loading library to work with data tables
+```{r}
+library(data.table)
+```
+
+Loading the electronic health record data from the study cohort
+```{r}
+cohort <- read.csv("assignment1_data/cohort.csv", stringsAsFactors = TRUE)
+lab <- read.csv("assignment1_data/lab1.csv")
+linker <- read.csv("assignment1_data/linker.csv", stringsAsFactors = TRUE)
+```
+
+#### Problem 1 (a)
+
+Converting data frames to data tables and exclude the `yob` field in `cohort` to ensure that only one yob field remains in the final data table
+```{r}
+cohort.dt <- data.table(cohort)
+lab.dt <- data.table(lab)[,!"yob"] 
+linker.dt <- data.table(linker)
+```
+
+Merging `cohort` and `lab` dataset using the `linker` dataset to create a single data table based dataset `cohort.dt`
+```{r}
+cohort.dt <- merge(cohort.dt, linker.dt, by.x = "id", by.y = "id")
+cohort.dt <- merge(cohort.dt, lab.dt, by.x = "LABID", by.y = "LABID")
+```
+
+Ensuring that the `albumin` field is converted to a factor:
+We ensured that when reading the `.csv` files into R and specified `stringsAsFactors = TRUE`, but we will check it again:
+```{r}
+is.factor(cohort.dt$albumin)
+```
+
+Ensuring that the ordering of the factor is 1=“normo”,2=“micro”,3=“macro”:
+```{r}
+cohort.dt$albumin <- relevel(cohort.dt$albumin, "macro")
+cohort.dt$albumin <- relevel(cohort.dt$albumin, "micro")
+cohort.dt$albumin <- relevel(cohort.dt$albumin, "normo")
+
+table(cohort.dt$albumin)
+```
+
+Ensuring the `diabetes` field is field is converted to a factor, too:
+```{r}
+cohort.dt[, diabetes := as.factor(diabetes)]
+```
+
+Performing assertion checks:
+* to ensure that all identifiers in cohort.csv have been accounted for
+* to ensure that any validation fields are consistent between sets
+```{r}
+stopifnot(all(cohort.dt$id %in% cohort$id))
+
+setorder(cohort.dt, id)
+setorder(linker.dt, id)
+stopifnot(all(cohort.dt[,id, LABID] == linker.dt[,id, LABID]))
+```
+
+Dropping the identifier that originated from lab dataset LABID
+```{r}
+cohort.dt$LABID <- NULL
+```
+
+#### Problem 1 (b)
+
+Calculating the age/year offset:
+```{r}
+age.offset <- mean(cohort.dt$yob + cohort.dt$age, na.rm=TRUE)
+```
+
+Updating any missing age fields based on age/year offset:
+```{r}
+cohort.dt[, age := ifelse(is.na(age), age.offset-yob, age)]
+```
+
+#### Problem 1 (c) and (d)
+
+Creating a separate data table to provide a summary of the data in the `cohort.dt` table.
+It contains a row for each column in the `cohort.dt` table and the following columns:
+* variable name
+* Median (Interquartile Range) for continuous non-categorical data and N (%) for cate-
+gorical
+* Total N
+* Missing N (%)
+
+Creating a function that takes a vector of numeric or integer values and returns a character string of the median and interquartile range. The functions accepts a boolean parameter `impute.to.mean` to impute any missing values to the mean value of the vector. Its default value is set to `FALSE`:
+```{r}
+return.median.plus.iqr <- function(vector, impute.to.mean=FALSE){
+  
+  if(impute.to.mean==TRUE){
+    # find missing values
+    na.idx <- is.na(vector)
+    # replace NAs with the median
+    vector[na.idx] <- mean(vector, na.rm=TRUE)
+  }
+  
+  # calculate the mean
+  v.mean <- round( median(vector, na.rm = TRUE),2)
+  # calculate the interquartile range
+  v.iqr <- round( quantile(vector, c(0.25, 0.75), na.rm = TRUE),2)
+  # format output so that it is a string with form “12 (11,13)”
+  output <- paste0(v.mean, " (", v.iqr[1],",",v.iqr[2],")")
+  
+  return(output)
+}
+```
+
+Performing the function on all `cohort.dt` columns with continuous values and using the result to calculate the summary table for all continuous variables:
+```{r}
+summary.con.variables <- data.table("Variable" = colnames(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)]),
+                                    "Median (IQR) or N (%)" = sapply(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)], return.median.plus.iqr),
+                                    "Total N" = sapply(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)], length),
+                                    "Missing N (%)" = sapply(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)], function(z)sum(is.na(z))/length(z)*100))
+```
+
+Splitting categorical fields in the summary table into a row per category. Creating a function that takes a vector of categorical values as an input and returns the total number of non-missing rows of the respective factor and the overall percentage of the respective factor:
+```{r}
+return.summary.cat <- function(vector, use.str){
+  
+  # calculate total number of non-missing rows of the factor category
+  cat.N <- length( vector[which(vector == use.str )])
+  # calculate overall percentage of non-missing rows of the factor category based on the input vector
+  cat.perc <- round( cat.N / length(vector) * 100, 2 )
+  
+  output <- paste0( cat.N, " (", cat.perc, ")")
+  return(output)
+}
+```
+
+Using this function to compute the total number of non-missing rows of the `albumin` and `diabetes` categories and the overall percentage of the `albumin` and `diabetes` categories:
+```{r}
+per.cat.N <- c( return.summary.cat(cohort.dt$diabetes, 0),
+                return.summary.cat(cohort.dt$diabetes, 1),
+                return.summary.cat(cohort.dt$albumin, "normo"),
+                return.summary.cat(cohort.dt$albumin, "micro"),
+                return.summary.cat(cohort.dt$albumin, "macro"))
+```
+
+Computing the remaining values for the summary table of the categorial variables
+```{r}
+cat.missing.N <- format(round(sapply(cohort.dt[, c("diabetes","albumin")], function(z)sum(is.na(z))/length(z)*100),2), nsmall = 2)
+cat.total.N <- sapply(cohort.dt[, c("diabetes","albumin")], length)
+```
+
+Creating the summary table for all non-continuous variables:
+```{r}
+summary.cat.variables <- data.table("Variable" = c("diabetes (0)","diabetes(1)","albumin (normo)","albumin (micro)","albumin (macro)"),
+                                    "Median (IQR) or N (%)" = per.cat.N,
+                                    "Total N" = c(rep(cat.total.N[1],2),rep(cat.total.N[2],3)),
+                                    "Missing N (%)" = c(rep(cat.missing.N[1],2),rep(cat.missing.N[2],3)))
+```
+
+Combining the results in one summary data table listing both the continuous and categorical variables:
+```{r}
+summary.cohort.dt <- rbind(summary.con.variables, summary.cat.variables)
+summary.cohort.dt
+```
+
+### Problem 2
+
+### Problem 3
+
+### Problem 4
