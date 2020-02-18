@@ -15,7 +15,7 @@ linker <- read.csv("assignment1_data/linker.csv", stringsAsFactors = TRUE)
 # convert to data tables
 
 cohort.dt <- data.table(cohort)
-lab.dt <- data.table(lab)[,.(LABID, urea, creatinine, glucose)] # ensure that only a single yob field remains
+lab.dt <- data.table(lab)[,!"yob"] # ensure that only a single yob field remains
 linker.dt <- data.table(linker)
 
 # (a) Using all three files load and merge to create a single data table based dataset cohort.dt
@@ -63,8 +63,14 @@ cohort.dt$LABID <- NULL
 
 # calculate the age offset
 
-
+age.offset <- mean(cohort.dt$yob + cohort.dt$age, na.rm=TRUE)
 
 # final code line
 
 cohort.dt[, age := ifelse(is.na(age), age.offset-yob, age)]
+
+## (c) ##
+
+summary.cohort.dt <- data.table("Variable Names" = colnames(cohort.dt),
+                                "Total N" = sapply(cohort.dt, length),
+                                "Missing N (%)" = sapply(cohort.dt, function(z)sum(is.na(z))/length(z)*100))
