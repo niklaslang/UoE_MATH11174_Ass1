@@ -142,5 +142,8 @@ summary.cat.variables <- data.table("Variable" = c("diabetes (0)","diabetes(1)",
                                     "Total N" = c(rep(cat.total.N[1],2),rep(cat.total.N[2],3)),
                                     "Missing N (%)" = c(rep(cat.missing.N[1],2),rep(cat.missing.N[2],3)))
 
+# Combining the results in one summary data table listing both the continuous and categorical variables
+
 summary.cohort.dt <- rbind(summary.con.variables, summary.cat.variables)
+View(summary.cohort.dt)
 
