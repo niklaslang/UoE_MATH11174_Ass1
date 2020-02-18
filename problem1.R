@@ -69,8 +69,66 @@ age.offset <- mean(cohort.dt$yob + cohort.dt$age, na.rm=TRUE)
 
 cohort.dt[, age := ifelse(is.na(age), age.offset-yob, age)]
 
-## (c) ##
+## (c) AND (d) ##
 
-summary.cohort.dt <- data.table("Variable Names" = colnames(cohort.dt),
-                                "Total N" = sapply(cohort.dt, length),
-                                "Missing N (%)" = sapply(cohort.dt, function(z)sum(is.na(z))/length(z)*100))
+# Creating a separate data table to provide a summary of the data in the `cohort.dt` table.
+#It contains a row for each column in the `cohort.dt` table and the following columns:
+# variable name
+# Median (Interquartile Range) for continuous non-categorical data and N (%) for categorical
+# Total N
+# Missing N (%)
+
+return.median.plus.iqr <- function(vector, impute.to.mean=FALSE){
+  
+  if(impute.to.mean==TRUE){
+    # find missing values
+    na.idx <- is.na(vector)
+    # replace NAs with the median
+    vector[na.idx] <- mean(vector, na.rm=TRUE)
+  }
+  
+  v.mean <- round( median(vector, na.rm = TRUE),2)
+  v.iqr <- round( quantile(vector, c(0.25, 0.75), na.rm = TRUE),2)
+  output <- paste0(v.mean, " (", v.iqr[1],",",v.iqr[2],")")
+  
+  return(output)
+}
+
+# Creating a function that takes a vector of numeric or integer values 
+# and returns a character string of the median and interquartile range. 
+# The functions accepts a boolean parameter `impute.to.mean` to impute any missing values 
+# to the mean value of the vector. 
+# Its default value is set to `FALSE`:
+
+summary.con.variables <- data.table("Variable" = colnames(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)]),
+                                    "Median (IQR) or N (%)" = sapply(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)], return.median.plus.iqr),
+                                    "Total N" = sapply(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)], length),
+                                    "Missing N (%)" = sapply(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)], function(z)sum(is.na(z))/length(z)*100))
+
+cat.missing.N <- format(round(sapply(cohort.dt[, c("diabetes","albumin")], function(z)sum(is.na(z))/length(z)*100),2), nsmall = 2)
+cat.total.N <- sapply(cohort.dt[, c("diabetes","albumin")], length)
+
+return.summary.cat <- function(vector, use.str){
+  
+  # calculate total number of non-missing rows of the factor category
+  cat.N <- length( vector[which(vector == use.str )])
+  # calculate overall percentage of non-missing rows of the factor category based on the input vector
+  cat.perc <- round( cat.N / length(vector) * 100, 2 )
+  
+  output <- paste0( cat.N, " (", cat.perc, ")")
+  return(output)
+}
+
+per.cat.N <- c( return.summary.cat(cohort.dt$diabetes, 0),
+                return.summary.cat(cohort.dt$diabetes, 1),
+                return.summary.cat(cohort.dt$albumin, "normo"),
+                return.summary.cat(cohort.dt$albumin, "micro"),
+                return.summary.cat(cohort.dt$albumin, "macro"))
+
+summary.cat.variables <- data.table("Variable" = c("diabetes (0)","diabetes(1)","albumin (normo)","albumin (micro)","albumin (macro)"),
+                                    "Median (IQR) or N (%)" = per.cat.N,
+                                    "Total N" = c(rep(cat.total.N[1],2),rep(cat.total.N[2],3)),
+                                    "Missing N (%)" = c(rep(cat.missing.N[1],2),rep(cat.missing.N[2],3)))
+
+summary.cohort.dt <- rbind(summary.con.variables, summary.cat.variables)
+
