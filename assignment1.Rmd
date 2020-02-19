@@ -1,3 +1,8 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
 # Assignment 1
 ## Biomedical Data Science
 ## B159640
@@ -127,7 +132,7 @@ return.summary.cat <- function(vector, use.str){
   cat.N <- length( vector[which(vector == use.str )])
   # calculate overall percentage of non-missing rows of the factor category based on the input vector
   cat.perc <- round( cat.N / length(vector) * 100, 2 )
-  
+   # format output so that it is a string with form “12 (5%)”
   output <- paste0( cat.N, " (", cat.perc, ")")
   return(output)
 }
@@ -163,6 +168,37 @@ summary.cohort.dt
 ```
 
 ### Problem 2
+
+Loading the `data.table` library and importing the required data sets
+```{r}
+library(data.table)
+
+gfr.1 <- read.csv("assignment1_data/ltegfr1.csv", stringsAsFactors = TRUE)
+gfr.2 <- read.csv("assignment1_data/ltegfr2.csv", stringsAsFactors = TRUE)
+```
+
+#### Problem 2 (a)
+
+Converting the files to data tables and merge in an appropriate way into a single data table
+```{r}
+eGFR.dt <- merge( data.table(gfr.1),
+                 data.table(gfr.2),
+                 by.x = c("id","fu.years"), 
+                 by.y = c("ID","fu.years"))
+```
+
+Ordering the observations according to subject identifier and follow-up time
+```{r}
+setorderv(eGFR.dt, c("id","fu.years"), c(1,1))
+```
+
+Adding an assertion that the ordering is correct
+
+```{r}
+stopifnot( all(eGFR.dt[, c("id", "fu.years")] == eGFR.dt[order(id, fu.years), fu.years, by = id] ))
+```
+
+#### Problem 2 (b)
 
 ### Problem 3
 
