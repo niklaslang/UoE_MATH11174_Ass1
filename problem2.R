@@ -25,7 +25,7 @@ stopifnot( all(eGFR.dt[, c("id", "fu.years")] == eGFR.dt[order(id, fu.years), fu
 
 # Computing the average eGFR and length of follow-up for each patient
 
-avg.table <- NULL
+summary.egfr.table <- NULL
 
 # creating bins for eGFR ranges:
 CKD.stage.1 <- 0
@@ -38,9 +38,12 @@ CKD.stage.5 <- 0
 missing.avg.egfr <- 0
 
 for (pat.id in 1:max(eGFR.dt$id)){
+  
   avg.egfr <- mean(eGFR.dt[id == pat.id]$egfr) 
   avg.fu.years <- mean(eGFR.dt[id == pat.id]$fu.years)
-  avg.table <- rbind(avg.table, c(pat.id, avg.egfr, avg.fu.years))
+  
+  summary.egfr.table <- rbind(summary.egfr.table, c(pat.id, avg.egfr, avg.fu.years))
+  
   if ( is.na(avg.egfr) ){
     missing.avg.egfr <- missing.avg.egfr + 1
   } else if (avg.egfr >= 0 && avg.egfr < 15){
@@ -56,8 +59,8 @@ for (pat.id in 1:max(eGFR.dt$id)){
   }
 }
 
-colnames(avg.table) <- c("pat.id", "avg.gfr", "avg.fu.years")
-avg.dt <- data.table(avg.table)
+summary.egfr.dt <- data.table(summary.egfr.table)
+colnames(summary.egfr.dt) <- c("pat.id", "avg.gfr", "avg.fu.years")
 
 # tabulating the number of patients with average eGFR in the following ranges: 
 # (0, 15], (15, 30], (30, 60], (60, 90], (90, ∞)
@@ -80,3 +83,25 @@ stopifnot( all(eGFR.dt[, c("id", "fu.years")] == eGFR.dt[order(id, fu.years), fu
 # avg.dt
 setorderv(avg.dt, c("pat.id","avg.fu.years"), c(1,1))
 stopifnot( all(avg.dt[, c("pat.id", "avg.fu.years")] == avg.dt[order(pat.id, avg.fu.years), avg.fu.years, by = pat.id] ))
+
+# Fitting a linear regression model for the eGFR measurements as a function of time
+# for each patient with at least 3 eGFR readings,
+# store it in the data table
+
+
+for (pat.id in 1:max(eGFR.dt$id)){
+  
+  lr.models <- list()
+  
+  if (sum(!is.na(eGFR.dt[id == pat.id]$egfr)) >= 3){
+    regr.egfr <- lm(egfr ~  fu.years, data = eGFR.dt[id == pat.id], na.action = na.omit)
+  } else {
+    regr.egfr <- NA
+  }
+  
+  lr.models[[pat.id]] <- regr.egfr
+}
+
+summary.egfr.dt <- cbind(summary.egfr.dt, lr.models)
+
+# Couning how many patients have a slope < -3, [-3, 0), [0, 3], > 3

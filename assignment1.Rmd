@@ -203,7 +203,7 @@ stopifnot( all(eGFR.dt[, c("id", "fu.years")] == eGFR.dt[order(id, fu.years), fu
 
 Computing the average eGFR and length of follow-up for each patient:
 ```{r}
-avg.table <- NULL
+summary.egfr.table <- NULL
 
 # creating bins for eGFR ranges:
 CKD.stage.1 <- 0
@@ -216,9 +216,15 @@ CKD.stage.5 <- 0
 missing.avg.egfr <- 0
 
 for (pat.id in 1:max(eGFR.dt$id)){
-  avg.egfr <- mean(eGFR.dt[id == pat.id]$egfr) 
+  
+  # calculate average eGFR for each patient
+  avg.egfr <- mean(eGFR.dt[id == pat.id]$egfr)
+  
+  # calculate average follow-up for each patient
   avg.fu.years <- mean(eGFR.dt[id == pat.id]$fu.years)
-  avg.table <- rbind(avg.table, c(pat.id, avg.egfr, avg.fu.years))
+  
+  # create a summary table
+  summary.egfr.table <- rbind(summary.egfr.table, c(pat.id, avg.egfr, avg.fu.years))
   if ( is.na(avg.egfr) ){
     missing.avg.egfr <- missing.avg.egfr + 1
   } else if (avg.egfr >= 0 && avg.egfr < 15){
@@ -234,10 +240,9 @@ for (pat.id in 1:max(eGFR.dt$id)){
   }
 }
 
-
-colnames(avg.table) <- c("pat.id", "avg.gfr", "avg.fu.years") # assign colnames to table
-avg.dt <- data.table(avg.table) # create data.table
-head(avg.dt)
+colnames(summary.egfr.table) <- c("pat.id", "avg.gfr", "avg.fu.years") # assign colnames to table
+summary.egfr.dt <- data.table(summary.egfr.table) # create data.table
+head(summary.egfr.dt)
 ```
 
 Tabulating the number of patients with average eGFR in the following ranges:
@@ -252,21 +257,21 @@ CKD.stages.dt
 Counting and reporting the number of patients with missing average eGFR:
 ```{r}
 # first, assert that our count was correct
-stopifnot(sum(is.na(avg.dt$avg.gfr)) == missing.avg.egfr)
+stopifnot(sum(is.na(summary.egfr.dt$avg.gfr)) == missing.avg.egfr)
 # number of patients with missing average eGFR
-sum(is.na(avg.dt$avg.gfr))
+sum(is.na(summary.egfr.dt$avg.gfr))
 ```
 
 Ensuring that the table ordering is returned to id, and follow-up time:
-Check `eGFR.dt` and `avg.dt` table:
+Check `eGFR.dt` and `summary.egfr.dt` table:
 ```{r}
 # eGFR.dt
 setorderv(eGFR.dt, c("id","fu.years"), c(1,1))
 stopifnot( all(eGFR.dt[, c("id", "fu.years")] == eGFR.dt[order(id, fu.years), fu.years, by = id] ))
 
-# avg.dt
-setorderv(avg.dt, c("pat.id","avg.fu.years"), c(1,1))
-stopifnot( all(avg.dt[, c("pat.id", "avg.fu.years")] == avg.dt[order(pat.id, avg.fu.years), avg.fu.years, by = pat.id]))
+# summary.egfr.dt
+setorderv(summary.egfr.dt, c("pat.id","avg.fu.years"), c(1,1))
+stopifnot( all(summary.egfr.dt[, c("pat.id", "avg.fu.years")] == summary.egfr.dt[order(pat.id, avg.fu.years), avg.fu.years, by = pat.id]))
 
 ```
 #### Problem 2 (c)
