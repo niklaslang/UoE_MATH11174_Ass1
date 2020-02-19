@@ -88,10 +88,9 @@ stopifnot( all(avg.dt[, c("pat.id", "avg.fu.years")] == avg.dt[order(pat.id, avg
 # for each patient with at least 3 eGFR readings,
 # store it in the data table
 
+lr.models <- vector(mode="list", length=max(eGFR.dt$id))
 
 for (pat.id in 1:max(eGFR.dt$id)){
-  
-  lr.models <- list()
   
   if (sum(!is.na(eGFR.dt[id == pat.id]$egfr)) >= 3){
     regr.egfr <- lm(egfr ~  fu.years, data = eGFR.dt[id == pat.id], na.action = na.omit)
