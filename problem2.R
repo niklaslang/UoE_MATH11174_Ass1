@@ -144,3 +144,57 @@ colnames(eGFR.le.15.dt) <- c('Patient ID', 'Sex', 'Age (baseline)', 'average eGF
 
 head(eGFR.le.15.dt)
 
+### (c) ###
+
+# For patients 3, 37, 162 and 223 (one at a time):
+
+# ploting the patient’s eGFR measurements as a function of time
+# fitting a linear regression model and add the regression line to the plot
+# reporting the 95% confidence interval for the regression coefficients of the fitted model
+# using a different colour, plot a second regression line computed after removing the
+# extreme eGFR values (one each of the highest and the lowest value)
+
+ids <- c(3, 37, 162, 223)
+
+for(pat in ids){
+  
+  time <- eGFR.dt[id == pat]$fu.years
+  egfr <- eGFR.dt[id == pat]$egfr
+  
+  time <- time[which(!is.na(egfr))]
+  egfr <- egfr[!is.na(egfr)]
+  
+  # plotting the patient’s eGFR measurements over time
+  plot(time, egfr,
+       type = "l",
+       col = "blue",
+       main = 'eGFR measurements over time',
+       xlab = 'time (years)',
+       ylab = 'eGFR (mL/min/1.73 m2)')
+  
+  # fitting a linear regression model
+  fit1 <- lm(egfr ~ time)
+  
+  # adding regression line to the plot
+  abline(coef(fit1)[1], coef(fit1)[2], col="red")
+  
+  # reporting  95% CI for the regression coefficients of fit 1
+  print(confint(fit1))
+  
+  # fitting a 2nd linear regression model without extrem eGFR values
+  time <- time[which(egfr > min(egfr) & egfr < max(egfr))]
+  egfr <- egfr[egfr > min(egfr) & egfr < max(egfr)]
+  
+  fit2 <- lm(egfr ~ time)
+  
+  # adding 2nd regression line to the plot
+  abline(coef(fit2)[1], coef(fit2)[2], col="orange")
+  
+  # reporting  95% CI for the regression coefficients of fit 2
+  print(confint(fit2))
+  
+  # legend to do differ fit1 from fit2
+  redorange <- c("red","orange")
+  legend("bottomleft", c("before removal", "after removal"), fill = redorange)
+  
+}
