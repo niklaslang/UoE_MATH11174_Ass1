@@ -604,3 +604,27 @@ This analysis revealed that a considerably weaker linear relationship (Pearson's
 A closer look at the Q-Q Plots also revealed that the dispersion of points is the least for eGFRs close to zero and increases with the eGFR. Hence, I concluded that the relationsship between the MDRD4 and CKD-EPI eGFR equations is linear, but the strength of the linear relationsship declines with higher eGFR values.
 
 ### Problem 4
+
+#### Problem 4 (a)
+
+Loading the built-in `infert` dataset and converting it to data table
+```{r}
+infert.dt <- data.table(infert, stringsAsFactors = TRUE)
+```
+
+Fitting a linear regression model `M1` to predict secondary infertility using age and parity as predictors:
+```{r}
+M1 <- glm(case ~ age + parity, data = infert.dt, family="binomial")
+```
+
+Using the deviance to judge the goodness of fit of the model and report a p-value (3 significant digits):
+```{1}
+M1$deviance
+```
+The deviance of a model is defined as minus two times the log-likelihood of a model. Hence, the better the fit of a model, the lower the deviance.
+However, the deviance alone doesn't tell us much about the goodness of fit of the model, we usually compare it to the deviance of another model. Since we don't have any model at this stage, I chose to compare it to the deviance of the null model. That is a model that bases its predictions only on the intercept term and hence its predicted probabilities are equal to the proportion of cases.
+Since the difference between the deviances of two models is χ2 distributed (with d.f. equal to the difference in parameters) we can also report a p-value for the test:
+```{r}
+signif(pchisq(M1$null.deviance - M1$deviance, df=1, lower.tail=FALSE), 3)
+```
+Since the reported p-value 0.883 >> 0.05, we can't reject the hypothesis that the simpler model (null model) is better.
