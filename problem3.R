@@ -150,3 +150,24 @@ mdrd4.summary.dt <- data.table("eGFR" = c("(0,60]","(60,90]", "(90,Inf]"),
                                "SD" = c(low.SD, med.SD, high.SD))
 
 mdrd4.summary.dt
+
+### (c) ###
+
+# Scatterplot of the MDRD4 and CKD-EPI eGFR
+
+plot(mdrd4.egfr, ckdepi.egfr, 
+     cex = .5, 
+     col='red',
+     main = "Q-Q Plot eGFR equations",
+     xlab = "MDRD4",
+     ylab = "CKD-EPI")
+
+# add vertical lines corresponding to median, first and third quartiles of MDRD4
+abline(v = median(mdrd4.egfr, na.rm = TRUE))
+abline(v = quantile(mdrd4.egfr, na.rm = TRUE)[2])
+abline(v = quantile(mdrd4.egfr, na.rm = TRUE)[4])
+
+# add horizontal lines corresponding to median, first and third quartiles of CKD-EPI
+abline(h = median(ckdepi.egfr, na.rm = TRUE))
+abline(h = quantile(ckdepi.egfr, na.rm = TRUE)[2])
+abline(h = quantile(ckdepi.egfr, na.rm = TRUE)[4])
