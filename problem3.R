@@ -155,10 +155,11 @@ mdrd4.summary.dt
 
 # Scatterplot of the MDRD4 and CKD-EPI eGFR
 
-plot(mdrd4.egfr, ckdepi.egfr, 
+plot(mdrd4.egfr, ckdepi.egfr,
      cex = .5, 
-     col='red',
-     main = "Q-Q Plot eGFR equations",
+     col='orange',
+     main = paste("Q-Q Plot eGFR equations", 
+                  "\nPearson's r: ", round(cor(mdrd4.egfr, ckdepi.egfr, method = "pearson", use = "complete.obs"),2)),
      xlab = "MDRD4",
      ylab = "CKD-EPI")
 
@@ -171,3 +172,36 @@ abline(v = quantile(mdrd4.egfr, na.rm = TRUE)[4])
 abline(h = median(ckdepi.egfr, na.rm = TRUE))
 abline(h = quantile(ckdepi.egfr, na.rm = TRUE)[2])
 abline(h = quantile(ckdepi.egfr, na.rm = TRUE)[4])
+
+# two separate plots for or eGFR values greater and lower than 90mL/min/1.73m2 
+
+par(mfrow=c(1,2))
+
+plot(mdrd4.egfr[which(mdrd4.egfr < 90)], ckdepi.egfr[which(mdrd4.egfr < 90)],
+     cex = .5, 
+     col='orange',
+     main = paste("Q-Q Plot eGFR equations", 
+                  "\nPearson's r: ", round(cor(mdrd4.egfr[which(mdrd4.egfr < 90)], ckdepi.egfr[which(mdrd4.egfr < 90)], method = "pearson", use = "complete.obs"),2)),
+     xlab = "MDRD4",
+     ylab = "CKD-EPI")
+
+plot(mdrd4.egfr[which(mdrd4.egfr > 90)], ckdepi.egfr[which(mdrd4.egfr > 90)],
+     cex = .5, 
+     col='orange',
+     main = paste("Q-Q Plot eGFR equations", 
+                  "\nPearson's r: ", round(cor(mdrd4.egfr[which(mdrd4.egfr > 90)], ckdepi.egfr[which(mdrd4.egfr > 90)], method = "pearson", use = "complete.obs"),2)),
+     xlab = "MDRD4",
+     ylab = "CKD-EPI")
+
+sliding.cor <- numeric(321)
+for (i in 1:321){
+  sliding.cor[i] <- cor(mdrd4.egfr[i:(i+80)], ckdepi.egfr[i:(i+80)], method = "pearson", use = "complete.obs")
+}
+
+par(mfrow=c(1,1))
+plot(seq(1,321), sliding.cor,
+     type = "l",
+     col='orange',
+     main = "Pearson's r between MDRD4 and CKD-EPI eGFR\nin sliding windows of SCr values",
+     xlab = "SCr sliding window",
+     ylab = "Pearson's r")

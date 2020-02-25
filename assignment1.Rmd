@@ -552,5 +552,55 @@ mdrd4.summary.dt <- data.table("eGFR" = c("(0,60]","(60,90]", "(90,Inf]"),
 
 mdrd4.summary.dt
 ```
+#### Problem 3 (c)
+
+Producing a scatter plot of the two eGFR vectors with added vertical lines corresponding to median, first and third quartiles of the MDRD4 eGFR and horizontal lines corresponding to median, first and third quartiles of the CKD-EPI eGFR: 
+```{r}
+# Scatterplot of the MDRD4 and CKD-EPI eGFR
+plot(mdrd4.egfr, ckdepi.egfr,
+     cex = .5, 
+     col='orange',
+     main = paste("Q-Q Plot eGFR equations", 
+                  "\nPearson's r: ", round(cor(mdrd4.egfr, ckdepi.egfr, method = "pearson", use = "complete.obs"),2)),
+     xlab = "MDRD4",
+     ylab = "CKD-EPI")
+
+# add vertical lines corresponding to median, first and third quartiles of MDRD4
+abline(v = median(mdrd4.egfr, na.rm = TRUE))
+abline(v = quantile(mdrd4.egfr, na.rm = TRUE)[2])
+abline(v = quantile(mdrd4.egfr, na.rm = TRUE)[4])
+
+# add horizontal lines corresponding to median, first and third quartiles of CKD-EPI
+abline(h = median(ckdepi.egfr, na.rm = TRUE))
+abline(h = quantile(ckdepi.egfr, na.rm = TRUE)[2])
+abline(h = quantile(ckdepi.egfr, na.rm = TRUE)[4])
+```
+
+**Is the relationship between the two eGFR equations linear?**
+
+
+Yes. The Q-Q plot (see above) clearly shows a strong overall linear relationship between the MDRD4 and CKD-EPI eGFRs. The pearson correlation coefficient of 0.97 confirms this observation. However, for eGFR values greater than 90mL/min/1.73m2 dispersion of the points increases, indicating a weaker linear relationship above this threshold. To assess the linear relationship between the two eGFR equations below and above the threshold independently, I split the two eGFR vectors, produced two separate scatterplots and recalculated Pearson's r for both splits:
+```{r}
+par(mfrow=c(1,2))
+
+plot(mdrd4.egfr[which(mdrd4.egfr < 90)], ckdepi.egfr[which(mdrd4.egfr < 90)],
+     cex = .5, 
+     col='orange',
+     main = paste("Q-Q Plot eGFR equations", 
+                  "\nPearson's r: ", round(cor(mdrd4.egfr[which(mdrd4.egfr < 90)], ckdepi.egfr[which(mdrd4.egfr < 90)], method = "pearson", use = "complete.obs"),2)),
+     xlab = "MDRD4",
+     ylab = "CKD-EPI")
+
+plot(mdrd4.egfr[which(mdrd4.egfr > 90)], ckdepi.egfr[which(mdrd4.egfr > 90)],
+     cex = .5, 
+     col='orange',
+     main = paste("Q-Q Plot eGFR equations", 
+                  "\nPearson's r: ", round(cor(mdrd4.egfr[which(mdrd4.egfr > 90)], ckdepi.egfr[which(mdrd4.egfr > 90)], method = "pearson", use = "complete.obs"),2)),
+     xlab = "MDRD4",
+     ylab = "CKD-EPI")
+```
+
+This analysis revealed that a considerably weaker linear relationship (Pearson's r = 0.84) above the threshold of 90mL/min/1.73m2 (compared to r = 1.0 below the threshold). 
+A closer look at the Q-Q Plots also revealed that the dispersion of points is the least for eGFRs close to zero and increases with the eGFR. Hence, I concluded that the relationsship between the MDRD4 and CKD-EPI eGFR equations is linear, but the strength of the linear relationsship declines with higher eGFR values.
 
 ### Problem 4
