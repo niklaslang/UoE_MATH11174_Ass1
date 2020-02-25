@@ -627,4 +627,25 @@ Since the difference between the deviances of two models is χ2 distributed (wit
 ```{r}
 signif(pchisq(M1$null.deviance - M1$deviance, df=1, lower.tail=FALSE), 3)
 ```
-Since the reported p-value 0.883 >> 0.05, we can't reject the hypothesis that the simpler model (null model) is better.
+Since the reported p-value 0.883 >> 0.05, we can't reject the hypothesis that the simpler model (null model) is better than `M1`.
+
+#### Problem 4 (b)
+
+Fitting a second model `M2` including the number of spontaneous abortions as a third predictors besides age and parity:
+```{r}
+M2 <- glm(case ~ age + parity + spontaneous, data = infert.dt, family="binomial")
+```
+
+Computing the odds ratio and 95% CI for the spontaneous abortions variable:
+```{r}
+M2.abortions <- exp(coef(M2)[4])
+CI.M2.abortions <- exp(confint(M2)[4, ])
+round(c(M2.abortions, CI.M2.abortions),2)
+```
+
+Reporting a p-value for the likelihood ratio test comparing model `M2` and `M1`
+```{r}
+pval <- pchisq(M1$deviance - M2$deviance, df=1, lower.tail=FALSE)
+signif(pval, 2)
+```
+Since reported p-value 1.3e-09 << 0.05, we can conclude that the model `M2` that includes the number of spontaneous abortions is significantly better.
