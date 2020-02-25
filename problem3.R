@@ -193,15 +193,16 @@ plot(mdrd4.egfr[which(mdrd4.egfr > 90)], ckdepi.egfr[which(mdrd4.egfr > 90)],
      xlab = "MDRD4",
      ylab = "CKD-EPI")
 
-sliding.cor <- numeric(321)
-for (i in 1:321){
-  sliding.cor[i] <- cor(mdrd4.egfr[i:(i+80)], ckdepi.egfr[i:(i+80)], method = "pearson", use = "complete.obs")
-}
+#sliding.cor <- numeric(321)
+#for (i in 1:321){
+#  sliding.cor[i] <- cor(mdrd4.egfr)[i:(i+80)], ckdepi.egfr[i:(i+80)], method = "pearson", use = "complete.obs")
+#}
 
-par(mfrow=c(1,1))
-plot(seq(1,321), sliding.cor,
-     type = "l",
-     col='orange',
-     main = "Pearson's r between MDRD4 and CKD-EPI eGFR\nin sliding windows of SCr values",
-     xlab = "SCr sliding window",
-     ylab = "Pearson's r")
+#par(mfrow=c(1,1))
+#plot(seq(1,321), sliding.cor,
+#     type = "l",
+#     col='orange',
+#     main = "Pearson's r between MDRD4 and CKD-EPI eGFR\nin sliding windows of SCr values",
+#     xlab = "SCr sliding window",
+#     ylab = "Pearson's r")
+
