@@ -83,4 +83,61 @@ M2.null.dev
 # check result
 round(M2.null.dev, 2) == round(M2$null.deviance, 2)
 
+### (d) ###
 
+# Using functions glm.cv() and predict.cv() from Lab 3,
+# performing 10-folds cross- validation for model M2
+# (set the random seed to 1 before creating the folds)
+
+# glm.cv function
+glm.cv <- function(formula, data, folds) {
+  regr.cv <- NULL
+  for (fold in 1:length(folds)){
+    regr.cv[[fold]] <- glm(formula, data=data[-folds[[fold]], ], family="binomial")
+  }
+  return(regr.cv)
+}
+
+# predict.cv function
+predict.cv <- function(regr.cv, data, outcome, folds){
+  pred.cv <- NULL
+  for (fold in 1:length(folds)) {
+    test.idx <- folds[[fold]]
+    pred.cv[[fold]] <- data.frame(obs = outcome[test.idx], 
+                                  pred = predict(regr.cv[[fold]],newdata=data,type="response")[test.idx])
+  }
+  return(pred.cv)
+}
+
+# load library
+library(caret)
+
+# set random seed to 1
+set.seed(1)
+
+# creating 10 folds
+k <- 10
+folds <- createFolds(infert.dt$case, k)
+
+# fitting a logistic regression model in each of the folds
+M2.cv <- glm.cv(case ~ age + parity + spontaneous, infert.dt, folds)
+
+# validating M2 across the 10 folds
+M2.cv.pred <- predict.cv(M2.cv, infert.dt, infert.dt$case, folds)
+
+# Evaluating the predictive performance of model M2, 
+# using function loglik.binom() to compute the log-likelihood 
+# of the predicted probabilities for each test fold
+
+loglik <- numeric(k)
+
+for (fold in 1:k){
+  obs <- M2.cv.pred[[fold]]$obs
+  pred <- M2.cv.pred[[fold]]$pred
+  loglik[fold] <- loglik.binom(obs, pred)
+  cat("Test fold ", fold, ": log-likelihood of the predicted probabilities: \t", loglik[fold],"\n")
+}
+
+# Reporting the sum of the test log-likelihoods over all folds
+
+sum(loglik)
