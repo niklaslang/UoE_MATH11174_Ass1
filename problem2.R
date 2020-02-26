@@ -24,7 +24,11 @@ stopifnot( all(eGFR.dt[, c("id", "fu.years")] == eGFR.dt[order(id, fu.years), fu
 ### (b) ###
 
 # Computing the average eGFR and length of follow-up for each patient
+# Bearing in the principle of minimal redundancy, I opted to create a new data table `summary.egfr.dt`
+# containing only `pat.id`, `avg.gfr` and `avg.fu.years` - instead of adding two new columns to `eGFR.dt`.
 
+#(However, I provided the code to simply add two new columns, `avg.gfr` and `avg.fu.years`, 
+# to `eGFR.dt` as comments at the end of this code block.)
 summary.egfr.table <- NULL
 
 for (pat.id in 1:max(eGFR.dt$id)){
@@ -40,6 +44,9 @@ for (pat.id in 1:max(eGFR.dt$id)){
 colnames(summary.egfr.table) <- c("pat.id", "avg.gfr", "avg.fu.years") # assign colnames to table
 summary.egfr.dt <- data.table(summary.egfr.table) # create data.table
 head(summary.egfr.dt)
+
+#eGFR.dt[, avg.gfr := round(mean(egfr, na.rm = TRUE),2), by = id]
+#eGFR.dt[, avg.fu.years := round(mean(fu.years, na.rm = TRUE),4), by = id]
 
 # tabulating the number of patients with average eGFR in the following ranges: 
 # (0, 15], (15, 30], (30, 60], (60, 90], (90, ∞)
@@ -83,10 +90,6 @@ summary.egfr.dt <- cbind(summary.egfr.dt, lr.models)
 # Counting how many patients have a slope < -3, [-3, 0), [0, 3], > 3
 
 # Creating slope bins
-
-slope.bins <- c(-Inf,-3,0,3,Inf)
-table(cut(coef(summary.egfr.dt$lr.models[[1]])[2], slope.bins))
-
 slope.1 <- 0 # < -3
 slope.2 <- 0 # [-3, 0)
 slope.3 <- 0 # [0, 3]
