@@ -17,6 +17,8 @@ M1$deviance
 # compare the difference of deviances of M1 and M0 and report a p-value
 signif(pchisq(M1$null.deviance - M1$deviance, df=1, lower.tail=FALSE), 3)
 
+# since the reported p-value 0.883 >> 0.05, we can't reject the hypothesis that the simpler model (null model) is better than `M1`
+
 ### (b) ###
 
 # Fit a second model (M2) by adding the number of spontaneous abortions 
@@ -32,6 +34,9 @@ round(c(M2.abortions, CI.M2.abortions),2)
 # Reporting a p-value for the likelihood ratio test compare model M2 to model M1
 pval <- pchisq(M1$deviance - M2$deviance, df=1, lower.tail=FALSE)
 signif(pval, 2)
+
+# since reported p-value 1.3e-09 << 0.05,
+# we can conclude that the model `M2` that includes the number of spontaneous abortions is significantly better.
 
 ### (c) ###
 

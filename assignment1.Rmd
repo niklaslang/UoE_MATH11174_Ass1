@@ -9,13 +9,11 @@ output:
 
 ### Problem 1
 
-Loading library to work with data tables
+Loading the electronic health record data required for Problem 1:
 ```{r}
+# load library to work with data tables (also for all following problems)
 library(data.table)
-```
 
-Loading the electronic health record data from the study cohort
-```{r}
 cohort <- read.csv("assignment1_data/cohort.csv", stringsAsFactors = TRUE)
 lab <- read.csv("assignment1_data/lab1.csv")
 linker <- read.csv("assignment1_data/linker.csv", stringsAsFactors = TRUE)
@@ -23,7 +21,7 @@ linker <- read.csv("assignment1_data/linker.csv", stringsAsFactors = TRUE)
 
 #### Problem 1 (a)
 
-Converting data frames to data tables and exclude the `yob` field in `cohort` to ensure that only one yob field remains in the final data table
+Converting data frames to data tables and exclude the `yob` field in `cohort` to ensure that only one yob field remains in the final data table:
 ```{r}
 cohort.dt <- data.table(cohort)
 lab.dt <- data.table(lab)[,!"yob"] 
@@ -37,21 +35,24 @@ cohort.dt <- merge(cohort.dt, lab.dt, by.x = "LABID", by.y = "LABID")
 ```
 
 Ensuring that the `albumin` field is converted to a factor:
-We ensured that when reading the `.csv` files into R and specified `stringsAsFactors = TRUE`, but we will check it again:
+We ensured that when reading the `.csv` files into R and specified `stringsAsFactors = TRUE`, so will just check it at this point:
 ```{r}
 is.factor(cohort.dt$albumin)
 ```
 
 Ensuring that the ordering of the factor is 1=“normo”,2=“micro”,3=“macro”:
 ```{r}
-cohort.dt$albumin <- relevel(cohort.dt$albumin, "macro")
-cohort.dt$albumin <- relevel(cohort.dt$albumin, "micro")
-cohort.dt$albumin <- relevel(cohort.dt$albumin, "normo")
+# relevel factor
+cohort.dt$albumin <- relevel(cohort.dt$albumin, "macro") # macro first, all others are moved down
+cohort.dt$albumin <- relevel(cohort.dt$albumin, "micro") # micro first, macro second, all others moved down
+cohort.dt$albumin <- relevel(cohort.dt$albumin, "normo") # normo first, micro second, macro third
 
+# check result
 table(cohort.dt$albumin)
 ```
 
 Ensuring the `diabetes` field is field is converted to a factor, too:
+(This is not required in the Problem 1 (a), however this is prerequisite for Problem 1 (d))
 ```{r}
 cohort.dt[, diabetes := as.factor(diabetes)]
 ```
@@ -77,7 +78,9 @@ cohort.dt$LABID <- NULL
 
 Calculating the age/year offset:
 ```{r}
-age.offset <- mean(cohort.dt$yob + cohort.dt$age, na.rm=TRUE)
+age.offset <- round(mean(cohort.dt$yob + cohort.dt$age, na.rm=TRUE),2)
+# Using the mean of all age/years offset rounded to zero decimal places here
+# If simply calculating the the age/year offset for the first entry of the dataset, this would return an error if either age or yob are NA
 ```
 
 Updating any missing age fields based on age/year offset:
@@ -91,8 +94,8 @@ Creating a separate data table to provide a summary of the data in the `cohort.d
 It contains a row for each column in the `cohort.dt` table and the following columns:
 
 * variable name
-* Median (Interquartile Range) for continuous non-categorical data and N (%) for cate-
-gorical
+* Median (Interquartile Range) for continuous non-categorical and N (%) for cate-
+gorical data
 * Total N
 * Missing N (%)
 
@@ -126,7 +129,7 @@ summary.con.variables <- data.table("Variable" = colnames(cohort.dt[, .SD, .SDco
                                     "Missing N (%)" = sapply(cohort.dt[, .SD, .SDcols = sapply(cohort.dt, is.numeric)], function(z)sum(is.na(z))/length(z)*100))
 ```
 
-Splitting categorical fields in the summary table into a row per category. Creating a function that takes a vector of categorical values as an input and returns the total number of non-missing rows of the respective factor and the overall percentage of the respective factor:
+Splitting categorical fields in the summary table into one row per category. Creating a function that takes a vector of categorical values as an input and returns the total number of non-missing rows of the respective factor and the overall percentage of the respective factor:
 ```{r}
 return.summary.cat <- function(vector, use.str){
   
@@ -149,7 +152,7 @@ per.cat.N <- c( return.summary.cat(cohort.dt$diabetes, 0),
                 return.summary.cat(cohort.dt$albumin, "macro"))
 ```
 
-Computing the remaining values for the summary table of the categorial variables
+Computing the remaining values for the summary table of the categorical variables
 ```{r}
 cat.missing.N <- format(round(sapply(cohort.dt[, c("diabetes","albumin")], function(z)sum(is.na(z))/length(z)*100),2), nsmall = 2)
 cat.total.N <- sapply(cohort.dt[, c("diabetes","albumin")], length)
@@ -171,17 +174,15 @@ summary.cohort.dt
 
 ### Problem 2
 
-Loading the `data.table` library and importing the required data sets
+Importing the required data sets:
 ```{r}
-library(data.table)
-
 gfr.1 <- read.csv("assignment1_data/ltegfr1.csv", stringsAsFactors = TRUE)
 gfr.2 <- read.csv("assignment1_data/ltegfr2.csv", stringsAsFactors = TRUE)
 ```
 
 #### Problem 2 (a)
 
-Converting the files to data tables and merge in an appropriate way into a single data table
+Converting the files to data tables and merge in an appropriate way into a single data table:
 ```{r}
 eGFR.dt <- merge( data.table(gfr.1),
                  data.table(gfr.2),
@@ -190,13 +191,12 @@ eGFR.dt <- merge( data.table(gfr.1),
                  all = TRUE )
 ```
 
-Ordering the observations according to subject identifier and follow-up time
+Ordering the observations according to subject identifier and follow-up time:
 ```{r}
 setorderv(eGFR.dt, c("id","fu.years"), c(1,1))
 ```
 
-Adding an assertion that the ordering is correct
-
+Adding an assertion that the ordering is correct:
 ```{r}
 stopifnot( all(eGFR.dt[, c("id", "fu.years")] == eGFR.dt[order(id, fu.years), fu.years, by = id] ))
 ```
@@ -204,6 +204,8 @@ stopifnot( all(eGFR.dt[, c("id", "fu.years")] == eGFR.dt[order(id, fu.years), fu
 #### Problem 2 (b)
 
 Computing the average eGFR and length of follow-up for each patient:
+Bearing in the principle of minimal redundancy, I opted to create a new data table `summary.egfr.dt` containing only `pat.id`, `avg.gfr` and `avg.fu.years` - instead of adding two new columns to `eGFR.dt`.
+(However, I provided the code to simply add two new columns, `avg.gfr` and `avg.fu.years`, to `eGFR.dt` as comments at the end of the following code cell.)
 ```{r}
 summary.egfr.table <- NULL
 
@@ -222,10 +224,13 @@ for (pat.id in 1:max(eGFR.dt$id)){
 colnames(summary.egfr.table) <- c("pat.id", "avg.gfr", "avg.fu.years") # assign colnames to table
 summary.egfr.dt <- data.table(summary.egfr.table) # create data.table
 head(summary.egfr.dt)
+
+#eGFR.dt[, avg.gfr := round(mean(egfr, na.rm = TRUE),2), by = id]
+#eGFR.dt[, avg.fu.years := round(mean(fu.years, na.rm = TRUE),4), by = id]
 ```
 
 Tabulating the number of patients with average eGFR in the following ranges:
-(0, 15], (15, 30], (30, 60], (60, 90], (90, ∞)
+(0, 15], (15, 30], (30, 60], (60, 90], (90, ∞]
 ```{r}
 egfr.bins <- c(0, 15, 30, 60, 90, Inf)
 table(cut(summary.egfr.dt$avg.gfr, egfr.bins))
@@ -238,13 +243,13 @@ sum(is.na(summary.egfr.dt$avg.gfr))
 ```
 
 Ensuring that the table ordering is returned to id, and follow-up time:
-Check `eGFR.dt` and `summary.egfr.dt` table:
+Checking `eGFR.dt` and `summary.egfr.dt` table:
 ```{r}
-# eGFR.dt
+# check eGFR.dt
 setorderv(eGFR.dt, c("id","fu.years"), c(1,1))
 stopifnot( all(eGFR.dt[, c("id", "fu.years")] == eGFR.dt[order(id, fu.years), fu.years, by = id] ))
 
-# summary.egfr.dt
+# check summary.egfr.dt
 setorderv(summary.egfr.dt, c("pat.id","avg.fu.years"), c(1,1))
 stopifnot( all(summary.egfr.dt[, c("pat.id", "avg.fu.years")] == summary.egfr.dt[order(pat.id, avg.fu.years), avg.fu.years, by = pat.id]))
 ```
@@ -274,7 +279,9 @@ for (pat.id in 1:max(eGFR.dt$id)){
 summary.egfr.dt <- cbind(summary.egfr.dt, lr.models)
 ```
 
-Counting how many patients have a slope < -3, [-3, 0), [0, 3], > 3
+Counting how many patients have a slope < -3, [-3, 0), [0, 3], > 3:
+
+(This step could easily have been computed in two lines of code (analog to the eGFR ranges in Problem 2 (b)), if the not storing the whole regression model in the table, but e.g. only slope and intercept).
 ```{r}
 # Creating slope bins
 slope.1 <- 0 # < -3
@@ -307,33 +314,41 @@ for (id in 1:max(summary.egfr.dt$pat.id)){
 # create data table
 slopes.dt <- data.table("slope" = c("< -3","[-3, 0)","[0, 3]","> 3"), 
                         "N Patients" = c(slope.1, slope.2, slope.3, slope.4))
+# showing results
 slopes.dt
 ```
 
 #### Problem 2 (c)
 
-For patients with average eGFR in the (0,15] range, collecting their identifier, sex, age at baseline, average eGFR, time of last eGFR reading and number of eGFR measurements taken in a data table:
+Creating a new data table `eGFR.le.15.dt` collecting id, sex, age at baseline, average eGFR, time of last eGFR reading and number of eGFR measurements taken for all patients with average eGFR in the (0,15] range:
 ```{r}
 eGFR.le.15 <- NULL
 
 for (i in 1:max(summary.egfr.dt$pat.id)){
+  
+  # calculate average eGFR
   avg.gfr <- summary.egfr.dt[pat.id == i]$avg.gfr
 
+  # check whether eGFR falls within the (0,15] range
   if (!is.na(avg.gfr) && avg.gfr > 0 && avg.gfr <= 15){
-    sex <- eGFR.dt[id == i]$sex[1]
-    age <- eGFR.dt[id == i]$baseline.age[1]
-    last.egfr <- last(eGFR.dt[id == i]$fu.years)
-    egfr.measurements <- sum(!is.na(eGFR.dt[id == i]$egfr))
+    sex <- eGFR.dt[id == i]$sex[1] # extract sex
+    age <- eGFR.dt[id == i]$baseline.age[1] # extract age
+    last.egfr <- last(eGFR.dt[id == i]$fu.years) # extract time of last eGFR reading
+    egfr.measurements <- sum(!is.na(eGFR.dt[id == i]$egfr)) # calculate number of eGFR measurements taken
     
+    # add row for eacht patient to table
     eGFR.le.15 <- rbind(eGFR.le.15, c(i, sex, age, avg.gfr, last.egfr, egfr.measurements))
 
   }
   
 }
 
+# convert to data.table
 eGFR.le.15.dt <- data.table(eGFR.le.15)
+# add colnames
 colnames(eGFR.le.15.dt) <- c('Patient ID', 'Sex', 'Age (baseline)', 'average eGFR', 'last eGFR measurments', 'eGFR measurements')
 
+# show results
 head(eGFR.le.15.dt)
 ```
 
@@ -341,7 +356,7 @@ head(eGFR.le.15.dt)
 
 For patients 3, 37, 162 and 223 (one at a time):
 
-* ploting the patient’s eGFR measurements as a function of time
+* plotting the patient’s eGFR measurements as a function of time
 * fitting a linear regression model and add the regression line to the plot
 * reporting the 95% confidence interval for the regression coefficients of the fitted model
 * using a different colour, plot a second regression line computed after removing the
@@ -386,11 +401,11 @@ for(pat in ids){
   legend("bottomleft", c("before removal", "after removal"), fill = redorange)
   
   # reporting  95% CI for the regression coefficients of fit 1
-  print("95% CI for regression coefficients before removal")
+  cat("95% CI for regression coefficients before removal\n")
   print(confint(fit1))
   
   # reporting  95% CI for the regression coefficients of fit 2
-  print("95% CI for regression coefficients after removal")
+  cat("95% CI for regression coefficients after removal\n")
   print(confint(fit2))
   
 }
@@ -401,8 +416,7 @@ for(pat in ids){
 #### Problem 3 (a)
 
 Writing an R6 class `Calcegfr` that accepts 4 vectors: serum creatinine (`scr`), age (`age`), sex (`sex`) and ethnicity (`ethnic`). 
-The initialisation method of the class validates that vector lengths match and stores them for use by the methods. The class then implements two separate public methods of the two eGFR formulas, MDRD4 and CKD-EPI, and stores the result as a vector of the same length as the input.
-
+The initialisation method of the class validates that input vector lengths match and stores them for use by the methods. The class then implements two separate public methods of the two eGFR formulas, MDRD4 and CKD-EPI, and stores the result as a vector of the same length as the input:
 ```{r}
 library(R6)
 
@@ -513,12 +527,12 @@ Computing mean and SD of the MDRD4 and CKD EPI results (rounded to the second de
 round(mean(mdrd4.egfr, na.rm = TRUE),2)
 # SD of MDRD4 results
 round(sd(mdrd4.egfr, na.rm = TRUE),2)
-
 # mean of CKD-EPI results
 round(mean(ckdepi.egfr, na.rm = TRUE),2)
 # SD of CKD-EPI results
 round(sd(ckdepi.egfr, na.rm = TRUE),2)
 ```
+
 Computing Pearson's correlation coefficient between both eGFR results
 ```{r}
 round(cor(mdrd4.egfr, ckdepi.egfr, method = "pearson", use = "complete.obs"),2)
@@ -549,9 +563,10 @@ mdrd4.summary.dt <- data.table("eGFR" = c("(0,60]","(60,90]", "(90,Inf]"),
                                "N" = c(length(mdrd4.egfr.low), length(mdrd4.egfr.med), length(mdrd4.egfr.high)),
                                "Mean" = c(low.mean, med.mean, high.mean),
                                "SD" = c(low.SD, med.SD, high.SD))
-
+# show summary data table
 mdrd4.summary.dt
 ```
+
 #### Problem 3 (c)
 
 Producing a scatter plot of the two eGFR vectors with added vertical lines corresponding to median, first and third quartiles of the MDRD4 eGFR and horizontal lines corresponding to median, first and third quartiles of the CKD-EPI eGFR: 
@@ -577,7 +592,6 @@ abline(h = quantile(ckdepi.egfr, na.rm = TRUE)[4])
 ```
 
 **Is the relationship between the two eGFR equations linear?**
-
 
 Yes. The Q-Q plot (see above) clearly shows a strong overall linear relationship between the MDRD4 and CKD-EPI eGFRs. The pearson correlation coefficient of 0.97 confirms this observation. However, for eGFR values greater than 90mL/min/1.73m2 dispersion of the points increases, indicating a weaker linear relationship above this threshold. To assess the linear relationship between the two eGFR equations below and above the threshold independently, I split the two eGFR vectors, produced two separate scatterplots and recalculated Pearson's r for both splits:
 ```{r}
@@ -631,7 +645,7 @@ Since the reported p-value 0.883 >> 0.05, we can't reject the hypothesis that th
 
 #### Problem 4 (b)
 
-Fitting a second model `M2` including the number of spontaneous abortions as a third predictors besides age and parity:
+Fitting a second model `M2` including the number of spontaneous abortions as a third predictor besides age and parity:
 ```{r}
 M2 <- glm(case ~ age + parity + spontaneous, data = infert.dt, family="binomial")
 ```
