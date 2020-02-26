@@ -7,6 +7,8 @@ output:
 ## Biomedical Data Science
 ## B159640
 
+This Rmarkdown document provides answers, tables and graphs for the problems 1-4 and the R code used to obtain them. It is recommended to knit the Rmarkdown to HTML to obtain the intended formatting.
+
 ### Problem 1
 
 Loading the electronic health record data required for Problem 1:
