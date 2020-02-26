@@ -649,3 +649,55 @@ pval <- pchisq(M1$deviance - M2$deviance, df=1, lower.tail=FALSE)
 signif(pval, 2)
 ```
 Since reported p-value 1.3e-09 << 0.05, we can conclude that the model `M2` that includes the number of spontaneous abortions is significantly better.
+
+#### Problem (c)
+
+Implementing a function that computes the binomial log-likelihood:
+$$LogL(\beta) = \sum_{i \in case} \log p_{i} + \sum_{i \in ctrl} \log (1-p_{i}) $$
+```{r}
+loglik.binom <- function(y.obs, y.pred){
+  
+  # check input data
+  stopifnot(length(y.obs) == length(y.pred))
+  
+  # use y.obs to split y.pred into cases and controls
+  cases <- y.pred[which(y.obs == 1)]
+  controls <- y.pred[which(y.obs == 0)]
+  
+  # compute log likelihood
+  loglik <- sum(log(cases)) + sum(log(1-controls))
+  
+  # return log likelihood
+  return(loglik)
+}
+```
+
+Using function `loglik.binom()` to compute deviance for model `M2`:
+```{r}
+# extract observations from infert data set
+obs <- infert.dt$case
+# obtain predicted probabilities with predict() function
+preds <- predict(M2, newdata = infert.dt, type = "response")
+
+# deviance is minus two times the log likelihood of a model
+M2.dev <- -2*loglik.binom(obs, preds) 
+M2.dev
+
+# check result
+round(M2.dev, 2) == round(M2$deviance, 2)
+```
+
+Using function `loglik.binom()` to compute null deviance for model `M2`:
+```{r}
+# use the same observations as before 
+null.obs <- obs
+# use the same predicted probabilities - corresponding to the proportion of cases - for all observations
+null.preds <- rep(sum( obs == 1)/length(obs), length((obs)))
+
+# deviance is minus two times the log likelihood of a model
+M2.null.dev <- -2*loglik.binom(null.obs, null.preds)
+M2.null.dev
+
+# check result
+round(M2.null.dev, 2) == round(M2$null.deviance, 2)
+```

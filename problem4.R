@@ -1,5 +1,6 @@
 ### (a) ###
 
+library(data.table)
 infert.dt <- data.table(infert, stringsAsFactors = TRUE)
 
 # Fit a logistic regression model (M1) to predict secondary infertility 
@@ -31,3 +32,55 @@ round(c(M2.abortions, CI.M2.abortions),2)
 # Reporting a p-value for the likelihood ratio test compare model M2 to model M1
 pval <- pchisq(M1$deviance - M2$deviance, df=1, lower.tail=FALSE)
 signif(pval, 2)
+
+### (c) ###
+
+# Implementing a function that computes the binomial log-likelihood
+
+loglik.binom <- function(y.obs, y.pred){
+  
+  # check input data
+  stopifnot(length(y.obs) == length(y.pred))
+  
+  # use y.obs to split y.pred into cases and controls
+  cases <- y.pred[which(y.obs == 1)]
+  controls <- y.pred[which(y.obs == 0)]
+  
+  # compute log likelihood
+  loglik <- sum(log(cases)) + sum(log(1-controls))
+  
+  # return log likelihood
+  return(loglik)
+}
+
+#  y.obs is a vector of observed outcomes 
+# (with values either 0 or 1 to represent controls and cases, respectively)
+obs <- infert.dt$case # extract observations from infert data set
+
+# y.pred is a vector of fitted probabilities learnt from a logistic regression model
+preds <- predict(M2, newdata = infert.dt, type = "response") # obtain predicted probabilities with predict() function
+
+# Using function loglik.binom() to compute deviance and null deviance for model M2
+
+# calculating deviance for M2
+# deviance is minus two times the log likelihood of a model
+M2.dev <- -2*loglik.binom(obs, preds)
+M2.dev
+
+# check result
+round(M2.dev, 2) == round(M2$deviance, 2)
+
+# calculating null deviance for M2
+# use the same observations as before 
+null.obs <- obs
+# use the same predicted probabilities - corresponding to the proportion of cases - for all observations
+null.preds <- rep(sum( obs == 1)/length(obs), length((obs)))
+
+# deviance is minus two times the log likelihood of a model
+M2.null.dev <- -2*loglik.binom(null.obs, null.preds)
+M2.null.dev
+
+# check result
+round(M2.null.dev, 2) == round(M2$null.deviance, 2)
+
+
